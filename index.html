@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Poll</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-body">
+
+
+   <h2 id="questionText">Loading question...</h2>
+
+<div class="mt-4 d-grid gap-2">
+    <button class="btn btn-outline-primary option-btn" id="optionA"></button>
+    <button class="btn btn-outline-primary option-btn" id="optionB"></button>
+    <button class="btn btn-outline-primary option-btn" id="optionC"></button>
+    <button class="btn btn-outline-primary option-btn" id="optionD"></button>
+</div>
+
+            <div id="message" class="mt-3"></div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+const API_BASE = "https://polling-back.onrender.com";
+
+let QUESTION_ID = null;
+
+async function loadQuestion() {
+    const res = await fetch(`${API_BASE}/api/questions/active/1`);
+    const data = await res.json();
+
+    QUESTION_ID = data.id;
+
+    document.getElementById("questionText").textContent = data.questionText;
+
+    setOption("optionA", data.optionA);
+    setOption("optionB", data.optionB);
+    setOption("optionC", data.optionC);
+    setOption("optionD", data.optionD);
+}
+
+function setOption(buttonId, optionText) {
+    const btn = document.getElementById(buttonId);
+
+    if (!optionText) {
+        btn.style.display = "none";
+        return;
+    }
+
+    btn.style.display = "block";
+    btn.textContent = optionText;
+    btn.dataset.option = optionText;
+}
+
+function disableButtons() {
+    document.querySelectorAll(".option-btn").forEach(btn => {
+        btn.disabled = true;
+    });
+}
+
+async function submitAnswer(option) {
+    const message = document.getElementById("message");
+
+    try {
+        const res = await fetch(`${API_BASE}/api/poll-responses`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                questionId: QUESTION_ID,
+                selectedOption: option
+            })
+        });
+
+        if (!res.ok) throw new Error();
+
+        disableButtons();
+        message.innerHTML = `<div class="alert alert-success">Answer submitted!</div>`;
+    } catch {
+        message.innerHTML = `<div class="alert alert-danger">Submission failed</div>`;
+    }
+}
+
+document.querySelectorAll(".option-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        submitAnswer(btn.dataset.option);
+    });
+});
+
+loadQuestion();
+</script>
+</body>
+</html>
