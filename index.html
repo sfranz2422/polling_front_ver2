@@ -34,7 +34,7 @@ const API_BASE = "https://polling-back.onrender.com";
 let QUESTION_ID = null;
 
 async function loadQuestion() {
-    const res = await fetch(`${API_BASE}/api/questions/active/1`);
+    const res = await fetch(`${API_BASE}/api/questions/active/franz-room`)
     const data = await res.json();
 
     QUESTION_ID = data.id;

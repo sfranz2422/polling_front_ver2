@@ -99,13 +99,28 @@
 <script>
 const API_BASE = "https://polling-back.onrender.com";
 
-// CHANGE THIS for testing
-const TEACHER_ID = 1;
+const ROOM_CODE = "franz-room";
+let CURRENT_ROOM_ID = null;
 
 let currentQuestionId = null;
+
+
+async function loadRoom() {
+    const res = await fetch(`${API_BASE}/api/rooms/code/${ROOM_CODE}`);
+    const room = await res.json();
+
+    CURRENT_ROOM_ID = room.id;
+
+    console.log("Current room:", room);
+}
+
+
+
 // Load questions on page load
 async function loadQuestions() {
-    const res = await fetch(`${API_BASE}/api/questions/teacher/${TEACHER_ID}`);
+    if (!CURRENT_ROOM_ID) return;
+
+    const res = await fetch(`${API_BASE}/api/questions/room/${CURRENT_ROOM_ID}`);
     const questions = await res.json();
 
     const select = document.getElementById("questionSelect");
@@ -149,7 +164,9 @@ document.getElementById("questionSelect").addEventListener("change", (e) => {
 });
 
 // Initial load
-loadQuestions().then(loadResults);
+loadRoom().then(() => {
+    loadQuestions().then(loadResults);
+});
 
 // 🔁 Auto refresh every 2 seconds
 setInterval(loadResults, 2000);
@@ -170,7 +187,7 @@ const optionD = document.getElementById("optionD").value;
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-    teacherId: TEACHER_ID,
+    roomId: CURRENT_ROOM_ID,
     questionText: questionText,
     optionA: optionA,
     optionB: optionB,
@@ -192,6 +209,7 @@ const optionD = document.getElementById("optionD").value;
 
     currentQuestionId = newQuestion.id;
     document.getElementById("questionSelect").value = currentQuestionId;
+
 
     loadResults();
 });
