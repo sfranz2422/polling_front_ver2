@@ -13,73 +13,64 @@
 <div class="container mt-4">
     <h2>Teacher Dashboard</h2>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <h5>Create New Question</h5>
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5>Create New Question</h5>
 
-        <form id="questionForm">
-            <div class="mb-3">
-                <!-- <label for="questionText" class="form-label">Question</label> -->
-                <input 
-                    type="text" 
-                    id="questionText" 
-                    class="form-control" 
-                    placeholder="Enter your poll question"
-                    required
-                >
-            </div>
+            <form id="questionForm">
+                <div class="mb-3">
+                    <input 
+                        type="text" 
+                        id="questionText" 
+                        class="form-control" 
+                        placeholder="Enter your poll question"
+                        required
+                    >
+                </div>
 
-                        <div class="mb-3">
-                <!-- <label for="optionA" class="form-label">Option A</label> -->
-                <input 
-                    type="text" 
-                    id="optionA" 
-                    class="form-control" 
-                    placeholder="Option A"
-                    required
-                >
-            </div>
+                <div class="mb-3">
+                    <input 
+                        type="text" 
+                        id="optionA" 
+                        class="form-control" 
+                        placeholder="Option A"
+                        required
+                    >
+                </div>
 
-                                    <div class="mb-3">
-                <!-- <label for="optionB" class="form-label">Option B</label> -->
-                <input 
-                    type="text" 
-                    id="optionB" 
-                    class="form-control" 
-                    placeholder="Option B"
-                    
-                >
-            </div>
-                                    <div class="mb-3">
-                <!-- <label for="optionC" class="form-label">Option C</label> -->
-                <input 
-                    type="text" 
-                    id="optionC" 
-                    class="form-control" 
-                    placeholder="Option C"
-                    
-                >
-            </div>
-                                                <div class="mb-3">
-                <!-- <label for="optionD" class="form-label">Option D</label> -->
-                <input 
-                    type="text" 
-                    id="optionD" 
-                    class="form-control" 
-                    placeholder="Option D"
-                    
-                >
-            </div>
+                <div class="mb-3">
+                    <input 
+                        type="text" 
+                        id="optionB" 
+                        class="form-control" 
+                        placeholder="Option B"
+                    >
+                </div>
 
-            <button type="submit" class="btn btn-primary">
-                Create Question
-            </button>
-        </form>
+                <div class="mb-3">
+                    <input 
+                        type="text" 
+                        id="optionC" 
+                        class="form-control" 
+                        placeholder="Option C"
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <input 
+                        type="text" 
+                        id="optionD" 
+                        class="form-control" 
+                        placeholder="Option D"
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Create Question
+                </button>
+            </form>
+        </div>
     </div>
-</div>
-
-
-
 
     <!-- Question selector -->
     <div class="mb-3">
@@ -99,28 +90,22 @@
 <script>
 const API_BASE = "https://polling-back.onrender.com";
 
-const ROOM_CODE = "franz-room";
-let CURRENT_ROOM_ID = null;
+const token = localStorage.getItem("token");
+
+if (!token) {
+    window.location.href = "login.html";
+}
 
 let currentQuestionId = null;
 
-
-async function loadRoom() {
-    const res = await fetch(`${API_BASE}/api/rooms/code/${ROOM_CODE}`);
-    const room = await res.json();
-
-    CURRENT_ROOM_ID = room.id;
-
-    console.log("Current room:", room);
-}
-
-
-
-// Load questions on page load
+// Load teacher's questions
 async function loadQuestions() {
-    if (!CURRENT_ROOM_ID) return;
+    const res = await fetch(`${API_BASE}/api/questions/my`, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
 
-    const res = await fetch(`${API_BASE}/api/questions/room/${CURRENT_ROOM_ID}`);
     const questions = await res.json();
 
     const select = document.getElementById("questionSelect");
@@ -136,6 +121,9 @@ async function loadQuestions() {
     if (questions.length > 0) {
         currentQuestionId = questions[0].id;
         select.value = currentQuestionId;
+    } else {
+        currentQuestionId = null;
+        document.getElementById("resultsList").innerHTML = "";
     }
 }
 
@@ -143,7 +131,12 @@ async function loadQuestions() {
 async function loadResults() {
     if (!currentQuestionId) return;
 
-    const res = await fetch(`${API_BASE}/api/poll-responses/${currentQuestionId}/results`);
+    const res = await fetch(`${API_BASE}/api/poll-responses/${currentQuestionId}/results`, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+
     const data = await res.json();
 
     const list = document.getElementById("resultsList");
@@ -164,52 +157,48 @@ document.getElementById("questionSelect").addEventListener("change", (e) => {
 });
 
 // Initial load
-loadRoom().then(() => {
-    loadQuestions().then(loadResults);
-});
+loadQuestions().then(loadResults);
 
-// 🔁 Auto refresh every 2 seconds
+// Auto refresh every 2 seconds
 setInterval(loadResults, 2000);
 
-
+// Create new question
 document.getElementById("questionForm").addEventListener("submit", async function(e) {
     e.preventDefault();
 
     const questionText = document.getElementById("questionText").value;
     const optionA = document.getElementById("optionA").value;
-const optionB = document.getElementById("optionB").value;
-const optionC = document.getElementById("optionC").value;
-const optionD = document.getElementById("optionD").value;
+    const optionB = document.getElementById("optionB").value;
+    const optionC = document.getElementById("optionC").value;
+    const optionD = document.getElementById("optionD").value;
 
     const response = await fetch(`${API_BASE}/api/questions`, {
         method: "POST",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-    roomId: CURRENT_ROOM_ID,
-    questionText: questionText,
-    optionA: optionA,
-    optionB: optionB,
-    optionC: optionC,
-    optionD: optionD
-})
+            questionText: questionText,
+            optionA: optionA,
+            optionB: optionB,
+            optionC: optionC,
+            optionD: optionD
+        })
     });
 
     const newQuestion = await response.json();
 
     document.getElementById("questionText").value = "";
-        document.getElementById("optionA").value = "";
-        document.getElementById("optionB").value = "";
-        document.getElementById("optionC").value = "";
-        document.getElementById("optionD").value = "";
-
+    document.getElementById("optionA").value = "";
+    document.getElementById("optionB").value = "";
+    document.getElementById("optionC").value = "";
+    document.getElementById("optionD").value = "";
 
     await loadQuestions();
 
     currentQuestionId = newQuestion.id;
     document.getElementById("questionSelect").value = currentQuestionId;
-
 
     loadResults();
 });
